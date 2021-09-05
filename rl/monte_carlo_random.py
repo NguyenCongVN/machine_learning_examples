@@ -10,13 +10,24 @@ import numpy as np
 from grid_world import standard_grid, negative_grid
 from iterative_policy_evaluation import print_values, print_policy
 
-SMALL_ENOUGH = 1e-5
+SMALL_ENOUGH = 1e-3
 GAMMA = 0.9
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
 
 # NOTE: this is only policy evaluation, not optimization
 
-def play_game(grid, policy, max_steps=20):
+def random_action(a):
+  # choose given a with probability 0.5
+  # choose some other a' != a with probability 0.5/3
+  p = np.random.random()
+  if p < 0.5:
+    return a
+  else:
+    tmp = list(ALL_POSSIBLE_ACTIONS)
+    tmp.remove(a)
+    return np.random.choice(tmp)
+
+def play_game(grid, policy):
   # returns a list of states and corresponding returns
 
   # reset game to start at a random position
@@ -28,22 +39,13 @@ def play_game(grid, policy, max_steps=20):
 
   s = grid.current_state()
   states_and_rewards = [(s, 0)] # list of tuples of (state, reward)
-  steps = 0
   while not grid.game_over():
     a = policy[s]
+    a = random_action(a)
     r = grid.move(a)
     s = grid.current_state()
     states_and_rewards.append((s, r))
-
-    steps += 1
-    if steps >= max_steps:
-      break
-
   # calculate the returns by working backwards from the terminal state
-
-  # we want to return:
-  # states  = [s(0), s(1), ..., s(T-1)]
-  # returns = [G(0), G(1), ..., G(T-1)]
   G = 0
   states_and_returns = []
   first = True
@@ -70,16 +72,32 @@ if __name__ == '__main__':
   print_values(grid.rewards, grid)
 
   # state -> action
+  # found by policy_iteration_random on standard_grid
+  # MC method won't get exactly this, but should be close
+  # values:
+  # ---------------------------
+  #  0.43|  0.56|  0.72|  0.00|
+  # ---------------------------
+  #  0.33|  0.00|  0.21|  0.00|
+  # ---------------------------
+  #  0.25|  0.18|  0.11| -0.17|
+  # policy:
+  # ---------------------------
+  #   R  |   R  |   R  |      |
+  # ---------------------------
+  #   U  |      |   U  |      |
+  # ---------------------------
+  #   U  |   L  |   U  |   L  |
   policy = {
     (2, 0): 'U',
     (1, 0): 'U',
     (0, 0): 'R',
     (0, 1): 'R',
     (0, 2): 'R',
-    (1, 2): 'R',
-    (2, 1): 'R',
-    (2, 2): 'R',
-    (2, 3): 'U',
+    (1, 2): 'U',
+    (2, 1): 'L',
+    (2, 2): 'U',
+    (2, 3): 'L',
   }
 
   # initialize V(s) and returns
@@ -93,8 +111,8 @@ if __name__ == '__main__':
       # terminal state or state we can't otherwise get to
       V[s] = 0
 
-  # repeat
-  for t in range(100):
+  # repeat until convergence
+  for t in range(5000):
 
     # generate an episode using pi
     states_and_returns = play_game(grid, policy)

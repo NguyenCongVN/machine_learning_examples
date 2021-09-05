@@ -10,36 +10,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from grid_world import standard_grid, negative_grid
 from iterative_policy_evaluation import print_values, print_policy
-
-SMALL_ENOUGH = 1e-3
-GAMMA = 0.9
-ALPHA = 0.1
-ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
+from td0_prediction import play_game, SMALL_ENOUGH, GAMMA, ALPHA, ALL_POSSIBLE_ACTIONS
 
 # NOTE: this is only policy evaluation, not optimization
 
-def random_action(a, eps=0.1):
-  # we'll use epsilon-soft to ensure all states are visited
-  # what happens if you don't do this? i.e. eps=0
-  p = np.random.random()
-  if p < (1 - eps):
-    return a
-  else:
-    return np.random.choice(ALL_POSSIBLE_ACTIONS)
+class Model:
+  def __init__(self):
+    self.theta = np.random.randn(4) / 2
+  
+  def s2x(self, s):
+    return np.array([s[0] - 1, s[1] - 1.5, s[0]*s[1] - 3, 1])
 
-def play_game(grid, policy):
-  # returns a list of states and corresponding rewards (not returns as in MC)
-  # start at the designated start state
-  s = (2, 0)
-  grid.set_state(s)
-  states_and_rewards = [(s, 0)] # list of tuples of (state, reward)
-  while not grid.game_over():
-    a = policy[s]
-    a = random_action(a)
-    r = grid.move(a)
-    s = grid.current_state()
-    states_and_rewards.append((s, r))
-  return states_and_rewards
+  def predict(self, s):
+    x = self.s2x(s)
+    return self.theta.dot(x)
+
+  def grad(self, s):
+    return self.s2x(s)
 
 
 if __name__ == '__main__':
@@ -64,14 +51,16 @@ if __name__ == '__main__':
     (2, 3): 'U',
   }
 
-  # initialize V(s) and returns
-  V = {}
-  states = grid.all_states()
-  for s in states:
-    V[s] = 0
+  model = Model()
+  deltas = []
 
   # repeat until convergence
-  for it in range(1000):
+  k = 1.0
+  for it in range(20000):
+    if it % 10 == 0:
+      k += 0.01
+    alpha = ALPHA/k
+    biggest_change = 0
 
     # generate an episode using pi
     states_and_rewards = play_game(grid, policy)
@@ -84,7 +73,27 @@ if __name__ == '__main__':
       s, _ = states_and_rewards[t]
       s2, r = states_and_rewards[t+1]
       # we will update V(s) AS we experience the episode
-      V[s] = V[s] + ALPHA*(r + GAMMA*V[s2] - V[s])
+      old_theta = model.theta.copy()
+      if grid.is_terminal(s2):
+        target = r
+      else:
+        target = r + GAMMA*model.predict(s2)
+      model.theta += alpha*(target - model.predict(s))*model.grad(s)
+      biggest_change = max(biggest_change, np.abs(old_theta - model.theta).sum())
+    deltas.append(biggest_change)
+
+  plt.plot(deltas)
+  plt.show()
+
+  # obtain predicted values
+  V = {}
+  states = grid.all_states()
+  for s in states:
+    if s in grid.actions:
+      V[s] = model.predict(s)
+    else:
+      # terminal state or state we can't otherwise get to
+      V[s] = 0
 
   print("values:")
   print_values(V, grid)
