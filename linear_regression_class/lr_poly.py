@@ -46,7 +46,7 @@ plt.scatter(X[:,1], Y)
 # to plot our quadratic model predictions, let's
 # create a line of x's and calculate the predicted y's
 x_line = np.linspace(X[:,1].min(), X[:,1].max())
-y_line = w[0] + w[1] * x_line + w[2] * x_line * x_line
+y_line = w[0] + w[1] * x_line + w[2] * x_line ** 2
 plt.plot(x_line, y_line)
 plt.title("Our fitted quadratic")
 plt.show()

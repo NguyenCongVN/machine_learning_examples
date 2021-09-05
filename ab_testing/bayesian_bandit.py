@@ -13,8 +13,8 @@ from scipy.stats import beta
 
 
 # np.random.seed(2)
-NUM_TRIALS = 2000
-BANDIT_PROBABILITIES = [0.2, 0.5, 0.75]
+NUM_TRIALS = 10000
+BANDIT_PROBABILITIES = [0.49, 0.5, 0.51]
 
 
 class Bandit:
@@ -48,20 +48,18 @@ def plot(bandits, trial):
 
 def experiment():
   bandits = [Bandit(p) for p in BANDIT_PROBABILITIES]
-
-  sample_points = [5,10,20,50,100,200,500,1000,1500,1999]
+  sample_points = [5,10,20,50,100,200,500,1000,1500,1999,4000 , 5000,9999]
   rewards = np.zeros(NUM_TRIALS)
   for i in range(NUM_TRIALS):
     # Thompson sampling
     j = np.argmax([b.sample() for b in bandits])
-
+    
     # plot the posteriors
     if i in sample_points:
       plot(bandits, i)
 
     # pull the arm for the bandit with the largest sample
     x = bandits[j].pull()
-
     # update rewards
     rewards[i] = x
 

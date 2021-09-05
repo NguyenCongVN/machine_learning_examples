@@ -24,11 +24,11 @@ R_outer = 10
 # angle theta is uniformly distributed between (0, 2pi)
 R1 = np.random.randn(N//2) + R_inner
 theta = 2*np.pi*np.random.random(N//2)
-X_inner = np.concatenate([[R1 * np.cos(theta)], [R1 * np.sin(theta)]]).T
+X_inner = np.array([R1 * np.cos(theta)]).T
 
 R2 = np.random.randn(N//2) + R_outer
 theta = 2*np.pi*np.random.random(N//2)
-X_outer = np.concatenate([[R2 * np.cos(theta)], [R2 * np.sin(theta)]]).T
+X_outer = np.array([R2 * np.cos(theta)]).T
 
 X = np.concatenate([ X_inner, X_outer ])
 T = np.array([0]*(N//2) + [1]*(N//2)) # labels: first 50 are 0, last 50 are 1

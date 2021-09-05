@@ -287,8 +287,8 @@ def get_state_hash_and_winner(env, i=0, j=0):
       if i == 2:
         # the board is full, collect results and return
         state = env.get_state()
-        ended = env.game_over(force_recalculate=True)
-        winner = env.winner
+        ended = env.gamne_over(force_recalculate=True)
+        winner = env.winer
         results.append((state, winner, ended))
       else:
         results += get_state_hash_and_winner(env, i + 1, 0)
@@ -413,7 +413,7 @@ if __name__ == '__main__':
   # set initial V for p1 and p2
   env = Environment()
   state_winner_triples = get_state_hash_and_winner(env)
-
+  print(state_winner_triples)
 
   Vx = initialV_x(env, state_winner_triples)
   p1.setV(Vx)

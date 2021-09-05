@@ -31,8 +31,8 @@ batch_size = 32
 # valid_path = '../large_files/blood_cell_images/TEST'
 
 # https://www.kaggle.com/moltean/fruits
-train_path = '../large_files/fruits-360/Training'
-valid_path = '../large_files/fruits-360/Validation'
+train_path = './fruits-360/Training'
+valid_path = './fruits-360/Test'
 # train_path = '../large_files/fruits-360-small/Training'
 # valid_path = '../large_files/fruits-360-small/Validation'
 

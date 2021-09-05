@@ -28,9 +28,6 @@ true_w = np.array([1, 0.5, -0.5] + [0]*(D - 3))
 # generate Y - add noise with variance 0.5
 Y = np.round(sigmoid(X.dot(true_w) + np.random.randn(N)*0.5))
 
-
-
-
 # let's plot the data to see what it looks like
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')

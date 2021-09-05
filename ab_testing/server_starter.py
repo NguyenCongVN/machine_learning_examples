@@ -21,11 +21,17 @@ app = Flask(__name__)
 class Bandit:
   def __init__(self, name):
     self.name = name
+    self.clks = 0
+    self.views = 0
 
   def sample(self):
-    # TODO
-    return 1
-
+    a = 1 + self.clks
+    b = 1 + self.views
+    return np.random.beta(a,b)
+  def AddViews(self):
+    self.views += 1
+  def AddClicks(self):
+    self.clks += 1
   # TODO - what else does the Bandit need to do?
 
 
@@ -38,7 +44,14 @@ banditB = Bandit('B')
 @app.route('/get_ad')
 def get_ad():
   # TODO
-  return jsonify({'advertisement_id': 'A'})
+  sampleA = banditA.sample()
+  sampleB = banditB.sample()
+  if sampleA > sampleB:
+    banditA.AddViews()
+    return jsonify({'advertisement_id': 'A'})
+  else:
+    banditB.AddViews()
+    return jsonify({'advertisement_id': 'B'})
 
 
 @app.route('/click_ad', methods=['POST'])
@@ -46,9 +59,11 @@ def click_ad():
   result = 'OK'
   if request.form['advertisement_id'] == 'A':
     # TODO
+    banditA.AddClicks()
     pass
   elif request.form['advertisement_id'] == 'B':
     # TODO
+    banditB.AddClicks()
     pass
   else:
     result = 'Invalid Input.'

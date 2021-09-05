@@ -29,6 +29,9 @@ T = np.array([0, 1, 1, 0])
 # ones = np.array([[1]*N]).T
 ones = np.ones((N, 1))
 
+plt.scatter(X[:, 0], X[:, 1], c=T)
+plt.show()
+
 # add a column of xy = x*y
 xy = (X[:,0] * X[:,1]).reshape(N, 1)
 Xb = np.concatenate((ones, xy, X), axis=1)

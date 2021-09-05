@@ -24,11 +24,11 @@ classes = [
   'Raspberry'
 ]
 
-train_path_from = os.path.abspath('../large_files/fruits-360/Training')
-valid_path_from = os.path.abspath('../large_files/fruits-360/Validation')
+train_path_from = os.path.abspath('../fruits-360/Training')
+valid_path_from = os.path.abspath('../fruits-360/Test')
 
-train_path_to = os.path.abspath('../large_files/fruits-360-small/Training')
-valid_path_to = os.path.abspath('../large_files/fruits-360-small/Validation')
+train_path_to = os.path.abspath('../fruits-360-small/Training')
+valid_path_to = os.path.abspath('../fruits-360-small/Test')
 
 mkdir(train_path_to)
 mkdir(valid_path_to)
