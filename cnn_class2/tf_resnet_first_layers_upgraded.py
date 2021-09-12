@@ -19,7 +19,7 @@ from keras.models import Model
 from keras.preprocessing import image
 from keras.applications.resnet import preprocess_input, decode_predictions
 
-from tf_resnet_convblock import ConvLayer, BatchNormLayer, ConvBlock
+from tf_resnet_convblock_upgraded import ConvLayer, BatchNormLayer, ConvBlock
 
 
 # NOTE: dependent on your Keras version
@@ -57,8 +57,8 @@ class MaxPoolLayer:
         self.dim = dim
 
     def forward(self, X):
-        return tf.nn.max_pool(
-            X,
+        return tf.nn.max_pool2d(
+            input=X,
             ksize=[1, self.dim, self.dim, 1],
             strides=[1, 2, 2, 1],
             padding='VALID'
@@ -79,7 +79,7 @@ class PartialResNet:
             # conv block
             ConvBlock(mi=64, fm_sizes=[64, 64, 256], stride=1),
         ]
-        self.input_ = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+        self.input_ = tf.compat.v1.placeholder(tf.float32, shape=(None, 224, 224, 3))
         self.output = self.forward(self.input_)
 
     def copyFromKerasLayers(self, layers):
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     keras_output = partial_model.predict(X)
 
     # get my model output
-    init = tf.variables_initializer(my_partial_resnet.get_params())
+    init = tf.compat.v1.variables_initializer(my_partial_resnet.get_params())
 
     # note: starting a new session messes up the Keras model
     session = keras.backend.get_session()

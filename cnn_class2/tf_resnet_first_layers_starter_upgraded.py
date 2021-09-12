@@ -21,8 +21,11 @@ from keras.applications.resnet import preprocess_input, decode_predictions
 
 from tf_resnet_convblock_starter import ConvLayer, BatchNormLayer, ConvBlock
 
+tf.compat.v1.disable_v2_behavior()
+
 
 class ReLULayer:
+    @tf.function
     def forward(self, X):
         return tf.nn.relu(X)
 
@@ -31,9 +34,10 @@ class MaxPoolLayer:
     def __init__(self, windowSize):
         self.windowSize = windowSize
 
+    @tf.function
     def forward(self, X):
-        return tf.nn.max_pool(input=X, ksize=[1, self.windowSize, self.windowSize, 1], strides=[1, 2, 2, 1],
-                              padding='VALID')
+        return tf.nn.max_pool2d(input=X, ksize=[1, self.windowSize, self.windowSize, 1], strides=[1, 2, 2, 1],
+                                padding='VALID')
 
 
 class PartialResNet:
@@ -43,27 +47,26 @@ class PartialResNet:
             ConvLayer(filter_size=7, featureMapIn=3, featureMapOut=64, stride=2, padding='SAME'),
             BatchNormLayer(FeatureMapSize=64),
             ReLULayer(),
-            MaxPoolLayer(windowSize=3)
+            MaxPoolLayer(windowSize=3),
+            # Conv Block
+            ConvBlock(inputDimension=64, featureMapSizes=[64, 64, 256], stride=1)
         ]
+
+    @tf.function
     def forward(self, X):
         for layer in self.layers:
             X = layer.forward(X)
         return X
+
     def copyFromKerasLayers(self, layers):
-        # TODO
-        pass
+        self.layers[0].copyFromKerasLayers(layers[1])
+        self.layers[1].copyFromKerasLayers(layers[2])
+        self.layers[4].copyFromKerasLayers(layers[5:])
 
+    @tf.function
     def predict(self, X):
-        #
+        # Lưu X vào
         return self.forward(X)
-
-    def set_session(self, session):
-        self.session = session
-        # TODO: finish this
-
-    def get_params(self):
-        params = []
-        # TODO: finish this
 
 
 if __name__ == '__main__':
@@ -84,18 +87,14 @@ if __name__ == '__main__':
     my_partial_resnet = PartialResNet()
     #
     # make a fake image
-    X = np.random.random((1, 224, 224, 3))
-
+    X = np.random.random((1, 224, 224, 3)).astype('float32')
     # get keras output
     keras_output = partial_model.predict(X)
 
-    # get my model output
-    init = tf.variables_initializer(my_partial_resnet.get_params())
-
     # note: starting a new session messes up the Keras model
-    session = keras.backend.get_session()
-    my_partial_resnet.set_session(session)
-    session.run(init)
+    # session = keras.backend.get_session()
+    # my_partial_resnet.set_session(session)
+    # session.run(init)
 
     # first, just make sure we can get any output
     first_output = my_partial_resnet.predict(X)

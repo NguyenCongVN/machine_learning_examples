@@ -10,6 +10,8 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 
+tf.compat.v1.disable_eager_execution()
+
 
 def init_filter(d, mi, mo, stride):
     return (np.random.randn(d, d, mi, mo) * np.sqrt(2.0 / (d * d * mi))).astype(np.float32)
@@ -24,8 +26,8 @@ class ConvLayer:
 
     def forward(self, X):
         X = tf.nn.conv2d(
-            X,
-            self.W,
+            input=X,
+            filters=self.W,
             strides=[1, self.stride, self.stride, 1],
             padding=self.padding
         )
@@ -119,7 +121,7 @@ class ConvBlock:
 
         # this will not be used when input passed in from
         # a previous layer
-        self.input_ = tf.placeholder(tf.float32, shape=(1, 224, 224, mi))
+        self.input_ = tf.compat.v1.placeholder(tf.float32, shape=(1, 224, 224, mi))
         self.output = self.forward(self.input_)
 
     def forward(self, X):
@@ -194,8 +196,8 @@ if __name__ == '__main__':
     # make a fake image
     X = np.random.random((1, 224, 224, 3))
 
-    init = tf.global_variables_initializer()
-    with tf.Session() as session:
+    init = tf.compat.v1.global_variables_initializer()
+    with tf.compat.v1.Session() as session:
         conv_block.set_session(session)
         session.run(init)
 
