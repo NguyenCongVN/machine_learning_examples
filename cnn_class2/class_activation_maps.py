@@ -7,7 +7,7 @@ from builtins import range, input
 # sudo pip install -U future
 
 from keras.models import Model
-from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+from keras.applications.resnet import ResNet50, preprocess_input, decode_predictions
 from keras.preprocessing import image
 
 import numpy as np
@@ -21,8 +21,8 @@ from glob import glob
 # get the image files
 # http://www.vision.caltech.edu/Image_Datasets/Caltech101/
 # http://www.vision.caltech.edu/Image_Datasets/Caltech256/
-image_files = glob('../large_files/256_ObjectCategories/*/*.jp*g')
-image_files += glob('../large_files/101_ObjectCategories/*/*.jp*g')
+image_files = glob('content/*.jp*g')
+# image_files += glob('../large_files/101_ObjectCategories/*/*.jp*g')
 
 
 
@@ -39,13 +39,13 @@ resnet = ResNet50(input_shape=(224, 224, 3), weights='imagenet', include_top=Tru
 resnet.summary()
 
 # make a model to get output before flatten
-activation_layer = resnet.get_layer('activation_49')
+activation_layer = resnet.get_layer('conv5_block3_out')
 
 # create a model object
 model = Model(inputs=resnet.input, outputs=activation_layer.output)
 
 # get the feature map weights
-final_dense = resnet.get_layer('fc1000')
+final_dense = resnet.get_layer('predictions')
 W = final_dense.get_weights()[0]
 
 
@@ -57,15 +57,21 @@ while True:
   # get predicted class
   probs = resnet.predict(x)
   classnames = decode_predictions(probs)[0]
-  print(classnames)
+  print(probs)
   classname = classnames[0][1]
   pred = np.argmax(probs[0])
+
+  print(pred)
 
   # get the 2048 weights for the relevant class
   w = W[:, pred]
 
+  print(W)
+
   # "dot" w with fmaps
   cam = fmaps.dot(w)
+
+  print(cam.shape)
 
   # upsample to 224 x 224
   # 7 x 32 = 224

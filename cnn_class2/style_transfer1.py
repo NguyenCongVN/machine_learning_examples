@@ -63,6 +63,7 @@ def VGG16_AvgPool_CutOff(shape, num_convs):
     return None
 
   model = VGG16_AvgPool(shape)
+
   # new_model = Sequential()
   # n = 0
   # for layer in model.layers:
@@ -127,6 +128,8 @@ if __name__ == '__main__':
   # make the target
   target = K.variable(content_model.predict(x))
 
+  print('target' , target)
+
 
   # try to match the image
 
@@ -173,6 +176,12 @@ if __name__ == '__main__':
       maxfun=20
     )
     x = np.clip(x, -127, 127)
+    x_temp = np.copy(x)
+    newimg = x_temp.reshape(*batch_shape)
+    final_img = unpreprocess(newimg)
+
+    plt.imshow(scale_img(final_img[0]))
+    plt.show()
     # print("min:", x.min(), "max:", x.max())
     print("iter=%s, loss=%s" % (i, l))
     losses.append(l)

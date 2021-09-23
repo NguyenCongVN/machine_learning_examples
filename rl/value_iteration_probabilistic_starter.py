@@ -7,8 +7,8 @@ from builtins import range
 
 
 import numpy as np
-from grid_world import windy_grid, windy_grid_penalized, ACTION_SPACE
-from iterative_policy_evaluation import print_values, print_policy
+from grid_world import windy_grid_penalized, ACTION_SPACE
+from iterative_policy_evaluation_probabilistic import print_values, print_policy
 
 SMALL_ENOUGH = 1e-3
 GAMMA = 0.9
@@ -29,10 +29,10 @@ def get_transition_probs_and_rewards(grid):
     rewards = {}
 
     for (s, a), v in grid.probs.items():
-        for s2, p in v.items():
-            transition_probs[(s, a, s2)] = p
-            rewards[(s, a, s2)] = grid.rewards.get(s2, 0)
-
+        for s1, prob in v.items():
+            transition_probs[(s, a, s1)] = prob
+            if s1 in grid.rewards:
+                rewards[(s,a,s1)] = grid.rewards.get(s1)
     return transition_probs, rewards
 
 
@@ -76,57 +76,63 @@ def evaluate_deterministic_policy(grid, policy, initV=None):
 
 if __name__ == '__main__':
 
-    grid = windy_grid_penalized(-0.1)
-    # grid = windy_grid()
+    grid = windy_grid_penalized()
     transition_probs, rewards = get_transition_probs_and_rewards(grid)
 
     # print rewards
     print("rewards:")
     print_values(grid.rewards, grid)
 
-    # state -> action
-    # we'll randomly choose an action and update as we learn
-    policy = {}
-    for s in grid.actions.keys():
-        policy[s] = np.random.choice(ACTION_SPACE)
-
-    # initial policy
-    print("initial policy:")
-    print_policy(policy, grid)
+    # initialize V(s)
+    V = {}
+    states = grid.all_states()
+    for s in states:
+        V[s] = 0
 
     # repeat until convergence - will break out when policy does not change
-    V = None
+    it = 0
     while True:
+        biggest_change = 0
+        for s in grid.all_states():
+            if not grid.is_terminal(s):
+                old_v = V[s]
+                new_v = float('-inf')
 
-        # policy evaluation step - we already know how to do this!
-        V = evaluate_deterministic_policy(grid, policy, initV=V)
+                for a in ACTION_SPACE:
+                    v = 0
+                    for s2 in grid.all_states():
+                        # reward is a function of (s, a, s'), 0 if not specified
+                        r = rewards.get((s, a, s2), 0)
+                        v += transition_probs.get((s, a, s2), 0) * (r + GAMMA * V[s2])
 
-        # policy improvement step
-        is_policy_converged = True
-        for s in grid.actions.keys():
-            old_a = policy[s]
-            new_a = None
-            best_value = float('-inf')
+                    # keep v if it's better
+                    if v > new_v:
+                        new_v = v
 
-            # loop through all possible actions to find the best current action
-            for a in ACTION_SPACE:
-                v = 0
-                for s2 in grid.all_states():
-                    # reward is a function of (s, a, s'), 0 if not specified
-                    r = rewards.get((s, a, s2), 0)
-                    v += transition_probs.get((s, a, s2), 0) * (r + GAMMA * V[s2])
+                V[s] = new_v
+                biggest_change = max(biggest_change, np.abs(old_v - V[s]))
 
-                if v > best_value:
-                    best_value = v
-                    new_a = a
-
-            # new_a now represents the best action in this state
-            policy[s] = new_a
-            if new_a != old_a:
-                is_policy_converged = False
-
-        if is_policy_converged:
+        it += 1
+        if biggest_change < SMALL_ENOUGH:
             break
+
+    # find policy
+    policy = {}
+    for s in grid.actions.keys():
+        best_a = None
+        best_value = float('-inf')
+        # Do value optimal nên chỉ tìm policy bình thường
+        for a in ACTION_SPACE:
+            v = 0
+            for s2 in grid.all_states():
+                # reward is a function of (s, a, s'), 0 if not specified
+                r = rewards.get((s, a, s2), 0)
+                v += transition_probs.get((s, a, s2), 0) * (r + GAMMA * V[s2])
+            # best_a is the action associated with best_value
+            if v > best_value:
+                best_value = v
+                best_a = a
+        policy[s] = best_a
 
     # once we're done, print the final policy and values
     print("values:")

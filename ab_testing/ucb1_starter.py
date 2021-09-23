@@ -32,7 +32,8 @@ class Bandit:
 
 
 def ucb(mean, n, nj):
-  return # TODO
+  ucb_mean = mean + np.sqrt((2 * np.log(n) / nj))
+  return ucb_mean
 
 
 def run_experiment():
@@ -47,7 +48,7 @@ def run_experiment():
     bandits[j].update(x)
   
   for i in range(NUM_TRIALS):
-    j = # TODO
+    j = np.argmax([ucb(bandit.p_estimate, i, bandit.N) for bandit in bandits])
     x = bandits[j].pull()
     total_plays += 1
     bandits[j].update(x)

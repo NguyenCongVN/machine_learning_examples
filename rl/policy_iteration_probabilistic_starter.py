@@ -7,8 +7,8 @@ from builtins import range
 
 
 import numpy as np
-from grid_world import windy_grid, windy_grid_penalized, ACTION_SPACE
-from iterative_policy_evaluation import print_values, print_policy
+from grid_world import windy_grid_penalized, ACTION_SPACE
+from iterative_policy_evaluation_probabilistic import print_values, print_policy
 
 SMALL_ENOUGH = 1e-3
 GAMMA = 0.9
@@ -29,10 +29,10 @@ def get_transition_probs_and_rewards(grid):
     rewards = {}
 
     for (s, a), v in grid.probs.items():
-        for s2, p in v.items():
-            transition_probs[(s, a, s2)] = p
-            rewards[(s, a, s2)] = grid.rewards.get(s2, 0)
-
+        for s1, prob in v.items():
+            transition_probs[(s, a, s1)] = prob
+            if s1 in grid.rewards:
+                rewards[(s,a,s1)] = grid.rewards.get(s1)
     return transition_probs, rewards
 
 
@@ -76,8 +76,7 @@ def evaluate_deterministic_policy(grid, policy, initV=None):
 
 if __name__ == '__main__':
 
-    grid = windy_grid_penalized(-0.1)
-    # grid = windy_grid()
+    grid = windy_grid_penalized()
     transition_probs, rewards = get_transition_probs_and_rewards(grid)
 
     # print rewards

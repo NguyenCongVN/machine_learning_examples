@@ -20,9 +20,7 @@ from keras.preprocessing import image
 from keras.applications.resnet import preprocess_input, decode_predictions
 
 from tf_resnet_convblock_starter import ConvLayer, BatchNormLayer, ConvBlock
-
 tf.compat.v1.disable_v2_behavior()
-
 
 class ReLULayer:
     @tf.function
@@ -40,6 +38,14 @@ class MaxPoolLayer:
                                 padding='VALID')
 
 
+class ZeroPaddingLayer:
+    def __init__(self, paddingSize):
+        self.paddingSize = paddingSize
+    @tf.function
+    def forward(self, X):
+        return tf.keras.layers.ZeroPadding2D(padding=self.paddingSize)(X)
+
+
 class PartialResNet:
     def __init__(self):
         # Khởi tạo các layers
@@ -47,6 +53,7 @@ class PartialResNet:
             ConvLayer(filter_size=7, featureMapIn=3, featureMapOut=64, stride=2, padding='SAME'),
             BatchNormLayer(FeatureMapSize=64),
             ReLULayer(),
+            ZeroPaddingLayer(paddingSize=1),
             MaxPoolLayer(windowSize=3),
             # Conv Block
             ConvBlock(inputDimension=64, featureMapSizes=[64, 64, 256], stride=1)
@@ -59,9 +66,9 @@ class PartialResNet:
         return X
 
     def copyFromKerasLayers(self, layers):
-        self.layers[0].copyFromKerasLayers(layers[1])
-        self.layers[1].copyFromKerasLayers(layers[2])
-        self.layers[4].copyFromKerasLayers(layers[5:])
+        self.layers[0].copyFromKerasLayers(layers[2])
+        self.layers[1].copyFromKerasLayers(layers[3])
+        self.layers[5].copyFromKerasLayers(layers[7:])
 
     @tf.function
     def predict(self, X):
@@ -77,7 +84,7 @@ if __name__ == '__main__':
     # by looking at resnet.layers in the console
     partial_model = Model(
         inputs=resnet.input,
-        outputs=resnet.layers[16].output
+        outputs=resnet.layers[18].output
     )
     print(partial_model.summary())
     # for layer in partial_model.layers:
@@ -105,7 +112,7 @@ if __name__ == '__main__':
 
     # compare the 2 models
     output = my_partial_resnet.predict(X)
-    diff = np.abs(output - keras_output).sum()
+    diff = tf.math.reduce_sum(tf.math.abs(output - keras_output)).numpy()
     if diff < 1e-10:
         print("Everything's great!")
     else:

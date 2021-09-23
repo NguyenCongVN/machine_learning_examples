@@ -55,6 +55,7 @@ def minimize(fn, epochs, batch_shape):
       maxfun=20
     )
     x = np.clip(x, -127, 127)
+
     print("iter=%s, loss=%s" % (i, l))
     losses.append(l)
 
