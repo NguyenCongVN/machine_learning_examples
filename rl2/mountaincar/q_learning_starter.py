@@ -37,60 +37,50 @@ from sklearn.linear_model import SGDRegressor
 # Inspired by https://github.com/dennybritz/reinforcement-learning
 class FeatureTransformer:
     def __init__(self, env, n_components=500):
-        observation_examples = np.array([env.observation_space.sample() for x in range(10000)])
-        scaler = StandardScaler()
-        scaler.fit(observation_examples)
-
-        # Used to converte a state to a featurizes represenation.
-        # We use RBF kernels with different variances to cover different parts of the space
-        featurizer = FeatureUnion([
-            ("rbf1", RBFSampler(gamma=5.0, n_components=n_components)),
-            ("rbf2", RBFSampler(gamma=2.0, n_components=n_components)),
-            ("rbf3", RBFSampler(gamma=1.0, n_components=n_components)),
-            ("rbf4", RBFSampler(gamma=0.5, n_components=n_components))
+        N = 10000
+        self.feature_transformer = FeatureUnion([
+            ('rbf1', RBFSampler(gamma=5, n_components=n_components)),
+            ('rbf2', RBFSampler(gamma=2, n_components=n_components)),
+            ('rbf3', RBFSampler(gamma=3, n_components=n_components)),
+            ('rbf4', RBFSampler(gamma=0.5, n_components=n_components)),
         ])
-        example_features = featurizer.fit_transform(scaler.transform(observation_examples))
 
-        self.dimensions = example_features.shape[1]
-        self.scaler = scaler
-        self.featurizer = featurizer
+        # Tạo ra các sample để tiến hành scale và fit với Feature Transform
+        samples = np.array([env.observation_space.sample() for i in range(N)])
+        # Tiến hành fit scaler
+        self.scaler = StandardScaler()
+        self.scaler.fit(samples)
+
+        # Tiến hành fit Feature Tranform
+        self.feature_transformer.fit(self.scaler.transform(samples))
 
     def transform(self, observations):
-        # print "observations:", observations
         scaled = self.scaler.transform(observations)
-        # assert(len(scaled.shape) == 2)
-        return self.featurizer.transform(scaled)
+        return self.feature_transformer.transform(scaled)
 
 
 # Holds one SGDRegressor for each action
 class Model:
     def __init__(self, env, feature_transformer, learning_rate):
         self.env = env
-        self.models = []
         self.feature_transformer = feature_transformer
+        # Khởi tạo các model tương ứng với các action
+        self.models = []
         for i in range(env.action_space.n):
             model = SGDRegressor(learning_rate=learning_rate)
-            model.partial_fit(feature_transformer.transform([env.reset()]), [0])
+            model.fit(self.feature_transformer.transform([self.env.reset()]), [0])
             self.models.append(model)
 
     def predict(self, s):
-        X = self.feature_transformer.transform([s])
-        result = np.stack([m.predict(X) for m in self.models]).T
-        assert (len(result.shape) == 2)
+        x = self.feature_transformer.transform([s])
+        result = np.stack([model.predict(x) for model in self.models]).T
         return result
 
     def update(self, s, a, G):
-        X = self.feature_transformer.transform([s])
-        assert (len(X.shape) == 2)
-        self.models[a].partial_fit(X, [G])
+        x = self.feature_transformer.transform([s])
+        self.models[a].partial_fit(x, [G])
 
     def sample_action(self, s, eps):
-        # eps = 0
-        # Technically, we don't need to do epsilon-greedy
-        # because SGDRegressor predicts 0 for all states
-        # until they are updated. This works as the
-        # "Optimistic Initial Values" method, since all
-        # the rewards for Mountain Car are -1.
         if np.random.random() < eps:
             return self.env.action_space.sample()
         else:
@@ -99,13 +89,18 @@ class Model:
 
 # returns a list of states_and_rewards, and the total reward
 def play_one(model, env, eps, gamma, render=False):
+    # Reset env sau mỗi lần chơi
     observation = env.reset()
     done = False
     totalreward = 0
     iters = 0
     while not done and iters < 10000:
+        # Chọn action với eps
         action = model.sample_action(observation, eps)
+        # Lưu lại state trước để tiến hành cập nhật
         prev_observation = observation
+
+        # Nhận giá trị mới sau lần thử
         observation, reward, done, info = env.step(action)
 
         # update the model
@@ -120,6 +115,25 @@ def play_one(model, env, eps, gamma, render=False):
             env.render()
 
     return totalreward
+
+
+def view_agent(model, env):
+    # Reset env sau mỗi lần chơi
+    observation = env.reset()
+    done = False
+    totalreward = 0
+    iters = 0
+    while not done and iters < 10000:
+        # Chọn action với eps
+        action = np.argmax(model.predict(observation))
+
+        # Nhận giá trị mới sau lần thử
+        observation, reward, done, info = env.step(action)
+
+        totalreward += reward
+
+        env.render()
+    print('reward:', totalreward)
 
 
 def plot_cost_to_go(env, estimator, num_tiles=20):
@@ -153,8 +167,13 @@ def plot_running_avg(totalrewards):
 
 
 def main(show_plots=True):
+    # Khởi tạo môi trường
     env = gym.make('MountainCar-v0')
+
+    # Khởi tạo FeatureTransformer chuyển State sang Feature
     ft = FeatureTransformer(env)
+
+    # Khởi tạo RL model
     model = Model(env, ft, "constant")
     gamma = 0.99
 
@@ -163,16 +182,26 @@ def main(show_plots=True):
         monitor_dir = './' + filename + '_' + str(datetime.now())
         env = wrappers.Monitor(env, monitor_dir)
 
-    N = 300
+    # Số lần thử
+    N = 1000
+    # Khởi tạo totalrewards để plot
     totalrewards = np.empty(N)
+
+    # Khởi tạo eps-greedy chọn action
     eps = None
+
+    # Thử
     for n in range(N):
         # eps = 1.0/(0.1*n+1)
+        # Giảm eps với lần thử cao hơn
         eps = 0.1 * (0.97 ** n)
         if n == 199:
             print("eps:", eps)
         # eps = 1.0/np.sqrt(n+1)
+        # Lưu lại reward nhận được sau mỗi lần chơi
         totalreward = play_one(model, env, eps, gamma)
+
+        # Set lại vào total reward
         totalrewards[n] = totalreward
         if (n + 1) % 100 == 0:
             print("episode:", n, "total reward:", totalreward)
@@ -189,7 +218,8 @@ def main(show_plots=True):
         # plot the optimal state-value function
         plot_cost_to_go(env, model)
     while True:
-        play_one(model, env, eps, gamma, render=True)
+        view_agent(model, env)
+
 
 if __name__ == '__main__':
     # for i in range(10):
