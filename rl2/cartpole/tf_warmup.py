@@ -11,34 +11,35 @@ import q_learning
 class SGDRegressor:
     def __init__(self, D):
         print("Hello TensorFlow!")
-        lr = 0.1
+        self.lr = 0.1
 
         # create inputs, targets, params
         # matmul doesn't like when w is 1-D
         # so we make it 2-D and then flatten the prediction
         self.w = tf.Variable(tf.random.normal(shape=(D, 1)), name='w')
-        self.X = tf.placeholder(tf.float32, shape=(None, D), name='X')
-        self.Y = tf.placeholder(tf.float32, shape=(None,), name='Y')
+        # self.X = tf.placeholder(tf.float32, shape=(None, D), name='X')
+        # self.Y = tf.placeholder(tf.float32, shape=(None,), name='Y')
 
+    @tf.function
+    def train_op(self, X, Y):
         # make prediction and cost
-        Y_hat = tf.reshape(tf.matmul(self.X, self.w), [-1])
-        delta = self.Y - Y_hat
+        Y_hat = tf.reshape(tf.matmul(X, self.w), [-1])
+        delta = Y - Y_hat
         cost = tf.reduce_sum(delta * delta)
+        tf.compat.v1.train.GradientDescentOptimizer(self.lr).minimize(cost, var_list=[self.w])
 
-        # ops we want to call later
-        self.train_op = tf.train.GradientDescentOptimizer(lr).minimize(cost)
-        self.predict_op = Y_hat
-
-        # start the session and initialize params
-        init = tf.global_variables_initializer()
-        self.session = tf.InteractiveSession()
-        self.session.run(init)
+    @tf.function
+    def predict_op(self, X):
+        return tf.reshape(tf.matmul(X, self.w), [-1])
 
     def partial_fit(self, X, Y):
-        self.session.run(self.train_op, feed_dict={self.X: X, self.Y: Y})
+        x_tensor = tf.convert_to_tensor(X, dtype=tf.dtypes.float32)
+        y_tensor = tf.convert_to_tensor(Y, dtype=tf.dtypes.float32)
+        self.train_op(x_tensor, y_tensor)
 
     def predict(self, X):
-        return self.session.run(self.predict_op, feed_dict={self.X: X})
+        x_tensor = tf.convert_to_tensor(X, dtype=tf.dtypes.float32)
+        return self.predict_op(x_tensor)
 
 
 if __name__ == '__main__':

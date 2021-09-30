@@ -16,7 +16,6 @@ from sklearn.utils import shuffle
 
 from benchmark import error_rate
 
-
 Hx = np.array([
     [-1, 0, 1],
     [-2, 0, 2],
@@ -35,21 +34,21 @@ def convolve_flatten(X):
     # input will be (32, 32, 3, N)
     # output will be (N, 32*32)
     N = X.shape[-1]
-    flat = np.zeros((N, 32*32))
+    flat = np.zeros((N, 32 * 32))
     for i in range(N):
-        #flat[i] = X[:,:,:,i].reshape(3072)
-        bw = X[:,:,:,i].mean(axis=2) # make it grayscale
+        # flat[i] = X[:,:,:,i].reshape(3072)
+        bw = X[:, :, :, i].mean(axis=2)  # make it grayscale
         Gx = convolve2d(bw, Hx, mode='same')
         Gy = convolve2d(bw, Hy, mode='same')
-        G = np.sqrt(Gx*Gx + Gy*Gy)
-        G /= G.max() # normalize it
-        flat[i] = G.reshape(32*32)
+        G = np.sqrt(Gx * Gx + Gy * Gy)
+        G /= G.max()  # normalize it
+        flat[i] = G.reshape(32 * 32)
     return flat
 
 
 def main():
     train = loadmat('../large_files/train_32x32.mat')
-    test  = loadmat('../large_files/test_32x32.mat')
+    test = loadmat('../large_files/test_32x32.mat')
 
     # Need to scale! don't leave as 0..255
     # Y is a N x 1 matrix with values 1..10 (MATLAB indexes by 1)
@@ -59,8 +58,8 @@ def main():
     Ytrain = train['y'].flatten() - 1
     Xtrain, Ytrain = shuffle(Xtrain, Ytrain)
 
-    Xtest  = convolve_flatten(test['X'].astype(np.float32))
-    Ytest  = test['y'].flatten() - 1
+    Xtest = convolve_flatten(test['X'].astype(np.float32))
+    Ytest = test['y'].flatten() - 1
 
     # gradient descent params
     max_iter = 15
@@ -70,7 +69,7 @@ def main():
     n_batches = N // batch_sz
 
     # initial weights
-    M1 = 1000 # hidden layer size
+    M1 = 1000  # hidden layer size
     M2 = 500
     K = 10
     W1_init = np.random.randn(D, M1) / np.sqrt(D + M1)
@@ -90,8 +89,8 @@ def main():
     W3 = tf.Variable(W3_init.astype(np.float32))
     b3 = tf.Variable(b3_init.astype(np.float32))
 
-    Z1 = tf.nn.relu( tf.matmul(X, W1) + b1 )
-    Z2 = tf.nn.relu( tf.matmul(Z1, W2) + b2 )
+    Z1 = tf.nn.relu(tf.matmul(X, W1) + b1)
+    Z2 = tf.nn.relu(tf.matmul(Z1, W2) + b2)
     Yish = tf.matmul(Z2, W3) + b3
 
     cost = tf.reduce_sum(
@@ -113,8 +112,8 @@ def main():
 
         for i in range(max_iter):
             for j in range(n_batches):
-                Xbatch = Xtrain[j*batch_sz:(j*batch_sz + batch_sz),]
-                Ybatch = Ytrain[j*batch_sz:(j*batch_sz + batch_sz),]
+                Xbatch = Xtrain[j * batch_sz:(j * batch_sz + batch_sz), ]
+                Ybatch = Ytrain[j * batch_sz:(j * batch_sz + batch_sz), ]
 
                 session.run(train_op, feed_dict={X: Xbatch, T: Ybatch})
                 if j % print_period == 0:

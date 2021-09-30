@@ -84,7 +84,8 @@ def watch_agent(model, env, eps):
     episode_reward = 0
     s = env.reset()
     while not done:
-        a = epsilon_greedy(model, s, eps=eps)
+        values = model.predict_all_actions(s)
+        a = np.argmax(values)
         s, r, done, info = env.step(a)
         env.render()
         episode_reward += r
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     watch_agent(model, env, eps=0)
 
     # repeat until convergence
-    n_episodes = 20000
+    n_episodes = 3000
     for it in range(n_episodes):
         s = env.reset()
         episode_reward = 0

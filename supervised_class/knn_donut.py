@@ -14,7 +14,7 @@ if __name__ == '__main__':
     X, Y = get_donut()
 
     # display the data
-    plt.scatter(X[:,0], X[:,1], s=100, c=Y, alpha=0.5)
+    plt.scatter(X[:, 0], X[:, 1], s=100, c=Y, alpha=0.5)
     plt.show()
 
     # get the accuracy

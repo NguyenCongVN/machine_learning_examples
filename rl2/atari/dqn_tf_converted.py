@@ -36,18 +36,18 @@ K = 4  # env.action_space.n
 # 3) Crop
 class ImageTransformer:
     def __init__(self):
-        with tf.variable_scope("image_transformer"):
-            self.input_state = tf.placeholder(shape=[210, 160, 3], dtype=tf.uint8)
+        with tf.compat.v1.variable_scope("image_transformer"):
+            self.input_state = tf.compat.v1.placeholder(shape=[210, 160, 3], dtype=tf.uint8)
             self.output = tf.image.rgb_to_grayscale(self.input_state)
             self.output = tf.image.crop_to_bounding_box(self.output, 34, 0, 160, 160)
-            self.output = tf.image.resize_images(
+            self.output = tf.image.resize(
                 self.output,
                 [IM_SIZE, IM_SIZE],
                 method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
             self.output = tf.squeeze(self.output)
 
     def transform(self, state, sess=None):
-        sess = sess or tf.get_default_session()
+        sess = sess or tf.compat.v1.get_default_session()
         return sess.run(self.output, {self.input_state: state})
 
 
@@ -110,6 +110,7 @@ class ReplayMemory:
         if index < self.agent_history_length - 1:
             raise ValueError("Index must be min 3")
         return self.frames[index - self.agent_history_length + 1:index + 1, ...]
+        # three dot -> get all other dimensions
 
     def _get_valid_indices(self):
         for i in range(self.batch_size):
@@ -117,8 +118,10 @@ class ReplayMemory:
                 index = random.randint(self.agent_history_length, self.count - 1)
                 if index < self.agent_history_length:
                     continue
+                # Check if include previous episode frame
                 if index >= self.current and index - self.agent_history_length <= self.current:
                     continue
+                # check terminal flag is true
                 if self.terminal_flags[index - self.agent_history_length:index].any():
                     continue
                 break
@@ -137,6 +140,7 @@ class ReplayMemory:
             self.states[i] = self._get_state(idx - 1)
             self.new_states[i] = self._get_state(idx)
 
+        # Đổi lại về dạng
         return np.transpose(self.states, axes=(0, 2, 3, 1)), self.actions[self.indices], self.rewards[
             self.indices], np.transpose(self.new_states, axes=(0, 2, 3, 1)), self.terminal_flags[self.indices]
 
@@ -147,16 +151,16 @@ class DQN:
         self.K = K
         self.scope = scope
 
-        with tf.variable_scope(scope):
+        with tf.compat.v1.variable_scope(scope):
 
             # inputs and targets
-            self.X = tf.placeholder(tf.float32, shape=(None, IM_SIZE, IM_SIZE, 4), name='X')
+            self.X = tf.compat.v1.placeholder(tf.float32, shape=(None, IM_SIZE, IM_SIZE, 4), name='X')
 
             # tensorflow convolution needs the order to be:
             # (num_samples, height, width, "color")
 
-            self.G = tf.placeholder(tf.float32, shape=(None,), name='G')
-            self.actions = tf.placeholder(tf.int32, shape=(None,), name='actions')
+            self.G = tf.compat.v1.placeholder(tf.float32, shape=(None,), name='G')
+            self.actions = tf.compat.v1.placeholder(tf.int32, shape=(None,), name='actions')
 
             # calculate output and cost
             # convolutional layers
@@ -164,7 +168,7 @@ class DQN:
             # calculate the size of the output of the final conv layer!
             Z = self.X / 255.0
             for num_output_filters, filtersz, poolsz in conv_layer_sizes:
-                Z = tf.contrib.layers.conv2d(
+                Z = tf.compat.v1.layers.conv2d(
                     Z,
                     num_output_filters,
                     filtersz,
@@ -173,21 +177,21 @@ class DQN:
                 )
 
             # fully connected layers
-            Z = tf.contrib.layers.flatten(Z)
+            Z = tf.compat.v1.layers.flatten(Z)
             for M in hidden_layer_sizes:
-                Z = tf.contrib.layers.fully_connected(Z, M)
+                Z = tf.compat.v1.layers.fully_connected(Z, M)
 
             # final output layer
-            self.predict_op = tf.contrib.layers.fully_connected(Z, K)
+            self.predict_op = tf.compat.v1.layers.fully_connected(Z, K)
 
             selected_action_values = tf.reduce_sum(
-                self.predict_op * tf.one_hot(self.actions, K),
-                reduction_indices=[1]
+                input_tensor=self.predict_op * tf.one_hot(self.actions, K),
+                axis=[1]
             )
 
             # cost = tf.reduce_mean(tf.square(self.G - selected_action_values))
-            cost = tf.reduce_mean(tf.losses.huber_loss(self.G, selected_action_values))
-            self.train_op = tf.train.AdamOptimizer(1e-5).minimize(cost)
+            cost = tf.reduce_mean(input_tensor=tf.compat.v1.losses.huber_loss(self.G, selected_action_values))
+            self.train_op = tf.compat.v1.train.AdamOptimizer(1e-5).minimize(cost)
             # self.train_op = tf.train.AdagradOptimizer(1e-2).minimize(cost)
             # self.train_op = tf.train.RMSPropOptimizer(2.5e-4, decay=0.99, epsilon=1e-3).minimize(cost)
             # self.train_op = tf.train.RMSPropOptimizer(0.00025, 0.99, 0.0, 1e-6).minimize(cost)
@@ -197,9 +201,9 @@ class DQN:
             self.cost = cost
 
     def copy_from(self, other):
-        mine = [t for t in tf.trainable_variables() if t.name.startswith(self.scope)]
+        mine = [t for t in tf.compat.v1.trainable_variables() if t.name.startswith(self.scope)]
         mine = sorted(mine, key=lambda v: v.name)
-        theirs = [t for t in tf.trainable_variables() if t.name.startswith(other.scope)]
+        theirs = [t for t in tf.compat.v1.trainable_variables() if t.name.startswith(other.scope)]
         theirs = sorted(theirs, key=lambda v: v.name)
 
         ops = []
@@ -209,12 +213,12 @@ class DQN:
         self.session.run(ops)
 
     def save(self):
-        params = [t for t in tf.trainable_variables() if t.name.startswith(self.scope)]
+        params = [t for t in tf.compat.v1.trainable_variables() if t.name.startswith(self.scope)]
         params = self.session.run(params)
         np.savez('tf_dqn_weights.npz', *params)
 
     def load(self):
-        params = [t for t in tf.trainable_variables() if t.name.startswith(self.scope)]
+        params = [t for t in tf.compat.v1.trainable_variables() if t.name.startswith(self.scope)]
         npz = np.load('tf_dqn_weights.npz')
         ops = []
         for p, (_, v) in zip(params, npz.iteritems()):
@@ -335,6 +339,10 @@ def smooth(x):
 
 if __name__ == '__main__':
 
+    import atari_py
+
+    print(atari_py.list_games())
+
     # hyperparams and initialize stuff
     conv_layer_sizes = [(32, 8, 4), (64, 4, 2), (64, 3, 1)]
     hidden_layer_sizes = [512]
@@ -368,10 +376,10 @@ if __name__ == '__main__':
     )
     image_transformer = ImageTransformer()
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         model.set_session(sess)
         target_model.set_session(sess)
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
 
         print("Populating experience replay buffer...")
         obs = env.reset()

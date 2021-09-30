@@ -111,7 +111,7 @@ def play_one(env, model, eps, gamma):
         if reward == 1:  # if we changed the reward to -200
             totalreward += reward
         iters += 1
-
+    print(totalreward)
     return totalreward
 
 
@@ -120,10 +120,11 @@ def view_agent(model, env):
     observation = env.reset()
     done = False
     totalreward = 0
-    iters = 0
-    while not done and iters < 10000:
+    while not done:
         # Chọn action với eps
-        action = np.argmax(model.predict(observation))
+        result = model.predict(observation)
+        print(result)
+        action = np.argmax(result)
 
         # Nhận giá trị mới sau lần thử
         observation, reward, done, info = env.step(action)
@@ -148,6 +149,7 @@ def main():
     N = 500
     totalrewards = np.empty(N)
     costs = np.empty(N)
+
     for n in range(N):
         eps = 1.0 / np.sqrt(n + 1)
         totalreward = play_one(env, model, eps, gamma)

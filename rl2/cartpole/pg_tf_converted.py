@@ -10,8 +10,9 @@ import gym
 import os
 import sys
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
+
+tf.compat.v1.disable_v2_behavior()
 import matplotlib.pyplot as plt
 from gym import wrappers
 from datetime import datetime
@@ -21,7 +22,7 @@ from q_learning_bins import plot_running_avg
 # so you can test different architectures
 class HiddenLayer:
     def __init__(self, M1, M2, f=tf.nn.tanh, use_bias=True):
-        self.W = tf.Variable(tf.random_normal(shape=(M1, M2)))
+        self.W = tf.Variable(tf.random.normal(shape=(M1, M2)))
         self.use_bias = use_bias
         if use_bias:
             self.b = tf.Variable(np.zeros(M2).astype(np.float32))
@@ -53,9 +54,9 @@ class PolicyModel:
         self.layers.append(layer)
 
         # inputs and targets
-        self.X = tf.placeholder(tf.float32, shape=(None, D), name='X')
-        self.actions = tf.placeholder(tf.int32, shape=(None,), name='actions')
-        self.advantages = tf.placeholder(tf.float32, shape=(None,), name='advantages')
+        self.X = tf.compat.v1.placeholder(tf.float32, shape=(None, D), name='X')
+        self.actions = tf.compat.v1.placeholder(tf.int32, shape=(None,), name='actions')
+        self.advantages = tf.compat.v1.placeholder(tf.float32, shape=(None,), name='advantages')
 
         # calculate output and cost
         Z = self.X
@@ -67,21 +68,20 @@ class PolicyModel:
         # self.action_scores = action_scores
         self.predict_op = p_a_given_s
 
-
         # self.one_hot_actions = tf.one_hot(self.actions, K)
 
-        selected_probs = tf.log(
+        selected_probs = tf.math.log(
             tf.reduce_sum(
-                p_a_given_s * tf.one_hot(self.actions, K),
-                reduction_indices=[1]
+                input_tensor=p_a_given_s * tf.one_hot(self.actions, K),
+                axis=[1]
             )
         )
 
         # self.selected_probs = selected_probs
-        cost = -tf.reduce_sum(self.advantages * selected_probs)
+        cost = -tf.reduce_sum(input_tensor=self.advantages * selected_probs)
         # self.cost = cost
         # self.train_op = tf.train.AdamOptimizer(1e-1).minimize(cost)
-        self.train_op = tf.train.AdagradOptimizer(1e-1).minimize(cost)
+        self.train_op = tf.compat.v1.train.AdagradOptimizer(1e-1).minimize(cost)
         # self.train_op = tf.train.MomentumOptimizer(1e-4, momentum=0.9).minimize(cost)
         # self.train_op = tf.train.GradientDescentOptimizer(1e-4).minimize(cost)
 
@@ -126,8 +126,8 @@ class ValueModel:
         self.layers.append(layer)
 
         # inputs and targets
-        self.X = tf.placeholder(tf.float32, shape=(None, D), name='X')
-        self.Y = tf.placeholder(tf.float32, shape=(None,), name='Y')
+        self.X = tf.compat.v1.placeholder(tf.float32, shape=(None, D), name='X')
+        self.Y = tf.compat.v1.placeholder(tf.float32, shape=(None,), name='Y')
 
         # calculate output and cost
         Z = self.X
@@ -136,10 +136,10 @@ class ValueModel:
         Y_hat = tf.reshape(Z, [-1])  # the output
         self.predict_op = Y_hat
 
-        cost = tf.reduce_sum(tf.square(self.Y - Y_hat))
+        cost = tf.reduce_sum(input_tensor=tf.square(self.Y - Y_hat))
         # self.train_op = tf.train.AdamOptimizer(1e-2).minimize(cost)
         # self.train_op = tf.train.MomentumOptimizer(1e-2, momentum=0.9).minimize(cost)
-        self.train_op = tf.train.GradientDescentOptimizer(1e-4).minimize(cost)
+        self.train_op = tf.compat.v1.train.GradientDescentOptimizer(1e-4).minimize(cost)
 
     def set_session(self, session):
         self.session = session
@@ -243,8 +243,8 @@ def main():
     K = env.action_space.n
     pmodel = PolicyModel(D, K, [])
     vmodel = ValueModel(D, [10])
-    init = tf.global_variables_initializer()
-    session = tf.InteractiveSession()
+    init = tf.compat.v1.global_variables_initializer()
+    session = tf.compat.v1.InteractiveSession()
     session.run(init)
     pmodel.set_session(session)
     vmodel.set_session(session)

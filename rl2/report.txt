@@ -1,0 +1,32 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 1 files
+Detected 0 issues that require attention
+--------------------------------------------------------------------------------
+================================================================================
+Detailed log follows:
+
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'E:\\GitHub\\machine_learning_examples\\rl2\\cartpole\\pg_tf.py'
+ outputting to 'E:\\GitHub\\machine_learning_examples\\rl2\\cartpole\\pg_tf_converted.py'
+--------------------------------------------------------------------------------
+
+14:0: INFO: Renamed 'tf.disable_v2_behavior' to 'tf.compat.v1.disable_v2_behavior'
+24:29: INFO: Renamed 'tf.random_normal' to 'tf.random.normal'
+56:17: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+57:23: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+58:26: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+73:25: INFO: Renamed 'tf.log' to 'tf.math.log'
+74:12: INFO: Added keywords to args of function 'tf.reduce_sum'
+74:12: INFO: Renamed keyword argument for tf.reduce_sum from reduction_indices to axis
+81:16: INFO: Added keywords to args of function 'tf.reduce_sum'
+84:24: INFO: Renamed 'tf.train.AdagradOptimizer' to 'tf.compat.v1.train.AdagradOptimizer'
+129:17: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+130:17: INFO: Renamed 'tf.placeholder' to 'tf.compat.v1.placeholder'
+139:15: INFO: Added keywords to args of function 'tf.reduce_sum'
+142:24: INFO: Renamed 'tf.train.GradientDescentOptimizer' to 'tf.compat.v1.train.GradientDescentOptimizer'
+246:11: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+247:14: INFO: Renamed 'tf.InteractiveSession' to 'tf.compat.v1.InteractiveSession'
+--------------------------------------------------------------------------------
+
