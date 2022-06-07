@@ -124,7 +124,6 @@ class DQN:
         next_states = [self.experience['s2'][i] for i in idx]
         dones = [self.experience['done'][i] for i in idx]
         next_Q = np.max(target_network.predict(next_states), axis=1)
-        print(next_Q)
         targets = [r + self.gamma * next_q if not done else r for r, next_q, done in zip(rewards, next_Q, dones)]
 
         # call optimizer
@@ -167,7 +166,7 @@ def play_one(env, model, tmodel, eps, gamma, copy_period):
     while not done and iters < 2000:
         # if we reach 2000, just quit, don't want this going forever
         # the 200 limit seems a bit early
-        action = model.sample_action(observation, eps)
+        action = model.sample_action(observation, eps)  # get sample by model
         prev_observation = observation
         observation, reward, done, info = env.step(action)
 
@@ -176,7 +175,8 @@ def play_one(env, model, tmodel, eps, gamma, copy_period):
             reward = -200
 
         # update the model
-        model.add_experience(prev_observation, action, reward, observation, done)
+        model.add_experience(prev_observation, action, reward, observation,
+                             done)  # add s, a, r, s2, done in replay memory
         model.train(tmodel)
 
         iters += 1
@@ -197,7 +197,7 @@ def main():
     K = env.action_space.n
     sizes = [200, 200]
     model = DQN(D, K, sizes, gamma)
-    tmodel = DQN(D, K, sizes, gamma)
+    tmodel = DQN(D, K, sizes, gamma)  # target model
     init = tf.compat.v1.global_variables_initializer()
     session = tf.compat.v1.InteractiveSession()
     session.run(init)
@@ -209,16 +209,16 @@ def main():
         monitor_dir = './' + filename + '_' + str(datetime.now())
         env = wrappers.Monitor(env, monitor_dir)
 
-    N = 500
+    N = 500  # play 500 episodes
     totalrewards = np.empty(N)
     costs = np.empty(N)
     for n in range(N):
         eps = 1.0 / np.sqrt(n + 1)
         totalreward = play_one(env, model, tmodel, eps, gamma, copy_period)
         totalrewards[n] = totalreward
-        if n % 100 == 0:
-            print("episode:", n, "total reward:", totalreward, "eps:", eps, "avg reward (last 100):",
-                  totalrewards[max(0, n - 100):(n + 1)].mean())
+        # if n % 100 == 0:
+        print("episode:", n, "total reward:", totalreward, "eps:", eps, "avg reward (last 100):",
+              totalrewards[max(0, n - 100):(n + 1)].mean())
 
     print("avg reward for last 100 episodes:", totalrewards[-100:].mean())
     print("total steps:", totalrewards.sum())

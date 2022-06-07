@@ -28,17 +28,17 @@ class KNN(object):
         self.y = y
 
     def predict(self, X):
-        y = np.zeros(len(X))
+        y = np.zeros(len(X))  # put many X predict point.
         for i, x in enumerate(X):  # test points
             sl = SortedList()  # stores (distance, class) tuples
             for j, xt in enumerate(self.X):  # training points
                 diff = x - xt
-                d = diff.dot(diff)
+                d = diff.dot(diff)  # distance = diff ^ 2.
                 if len(sl) < self.k:
-                    # don't need to check, just add
+                    # don't need to check, just add to sortList.
                     sl.add((d, self.y[j]))
                 else:
-                    if d < sl[-1][0]:
+                    if d < sl[-1][0]: # if distance is smaller than last item of sortList -> replace.
                         del sl[-1]
                         sl.add((d, self.y[j]))
             # print "input:", x
@@ -48,7 +48,7 @@ class KNN(object):
             votes = {}
             for _, v in sl:
                 # print "v:", v
-                votes[v] = votes.get(v, 0) + 1
+                votes[v] = votes.get(v, 0) + 1 # count vote of tuple in sortList.
             # print "votes:", votes, "true:", Ytest[i]
             max_votes = 0
             max_votes_class = -1

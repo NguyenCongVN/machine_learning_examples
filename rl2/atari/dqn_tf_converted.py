@@ -17,7 +17,7 @@ from gym import wrappers
 from datetime import datetime
 
 # from scipy.misc import imresize
-
+tf.compat.v1.disable_eager_execution()
 ##### testing only
 # MAX_EXPERIENCES = 10000
 # MIN_EXPERIENCES = 1000
@@ -52,6 +52,7 @@ class ImageTransformer:
 
 
 def update_state(state, obs_small):
+    # Thêm frame vào state đưa vào đầu tiên ( mở rộng dim trước khi đưa vào : state dạng 4x80x80)
     return np.append(state[:, :, 1:], np.expand_dims(obs_small, 2), axis=2)
 
 
@@ -173,16 +174,16 @@ class DQN:
                     num_output_filters,
                     filtersz,
                     poolsz,
-                    activation_fn=tf.nn.relu
+                    activation=tf.nn.relu
                 )
 
             # fully connected layers
             Z = tf.compat.v1.layers.flatten(Z)
             for M in hidden_layer_sizes:
-                Z = tf.compat.v1.layers.fully_connected(Z, M)
+                Z = tf.keras.layers.Dense(M)(Z)
 
             # final output layer
-            self.predict_op = tf.compat.v1.layers.fully_connected(Z, K)
+            self.predict_op = tf.keras.layers.Dense(K)(Z)
 
             selected_action_values = tf.reduce_sum(
                 input_tensor=self.predict_op * tf.one_hot(self.actions, K),
@@ -343,6 +344,9 @@ if __name__ == '__main__':
 
     print(atari_py.list_games())
 
+    print(gym.envs.registry.all())
+    print(gym.envs.registry.make('Pong-v0'))
+
     # hyperparams and initialize stuff
     conv_layer_sizes = [(32, 8, 4), (64, 4, 2), (64, 3, 1)]
     hidden_layer_sizes = [512]
@@ -360,7 +364,7 @@ if __name__ == '__main__':
     epsilon_change = (epsilon - epsilon_min) / 500000
 
     # Create environment
-    env = gym.envs.make("Breakout-v0")
+    env = gym.envs.make("Breakout-v4")
 
     # Create models
     model = DQN(

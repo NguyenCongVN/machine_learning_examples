@@ -10,12 +10,14 @@ import gym
 import os
 import sys
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+# import tensorflow.compat.v1 as tf
+import tensorflow._api.v2.compat.v1 as tf
 import matplotlib.pyplot as plt
 from gym import wrappers
 from datetime import datetime
 from q_learning_bins import plot_running_avg
+
+tf.disable_v2_behavior()
 
 
 # so you can test different architectures
@@ -66,7 +68,6 @@ class PolicyModel:
         # p_a_given_s = tf.nn.softmax(action_scores)
         # self.action_scores = action_scores
         self.predict_op = p_a_given_s
-
 
         # self.one_hot_actions = tf.one_hot(self.actions, K)
 
@@ -225,7 +226,7 @@ def play_one_mc(env, pmodel, vmodel, gamma):
     G = 0
     for s, r in zip(reversed(states), reversed(rewards)):
         returns.append(G)
-        advantages.append(G - vmodel.predict(s)[0])
+        advantages.append(G - vmodel.predict(s)[0])  # v model is used to calc advantages
         G = r + gamma * G
     returns.reverse()
     advantages.reverse()
